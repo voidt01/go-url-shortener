@@ -20,17 +20,30 @@ func main() {
 
 const addr = "http://localhost:4000/"
 
-type URLData struct {
+type urlStore struct {
+	urls map[string]string
+}
+
+type postUrlRequest struct {
 	OriginalURL string `json:"original_url"`
-	ShortenURL  string `json:"shorten_url,omitempty"`
+}
+
+type postUrlResponse struct {
+	OriginalURL string `json:"original_url"`
+	ShortenURL  string `json:"shorten_url"`
 }
 
 func Shorten(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
+	urlDatabase := &urlStore{
+		urls: make(map[string]string),
+	}
+	urlRequest := &postUrlRequest{}
+	urlResponse := &postUrlResponse{}
+
 	// Decode POST Request body (JSON) to Go
-	urlStore := &URLData{}
-	err_decode := json.NewDecoder(r.Body).Decode(urlStore)
+	err_decode := json.NewDecoder(r.Body).Decode(urlRequest)
 
 	if err_decode != nil {
 		log.Printf("Error decoding request: %v", err_decode)
@@ -38,22 +51,24 @@ func Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate Short URL
-	urlStore.ShortenURL = addr + generateURL()
+	// Generate Short URL & Store urls in Database
+	key := generateURL()
+	value := urlRequest.OriginalURL
+	urlDatabase.urls[key] = value
 
-	// Encode Shorten URL (Go) to JSON
-	response := map[string]string{
-		"shorten_url": urlStore.ShortenURL,
-	}
+	// creating post response struct
+	urlResponse.OriginalURL = value
+	urlResponse.ShortenURL = addr + key
 
+	// encoding response struct (G0) to JSON
 	w.Header().Set("Content-Type", "application/json")
-	err_encode := json.NewEncoder(w).Encode(response)
+	err_encode := json.NewEncoder(w).Encode(urlResponse)
 
 	if err_encode != nil {
 		log.Printf("Error encoding response: %v", err_encode)
 	}
 
-	fmt.Fprintf(w, "%+v\n", urlStore)
+	fmt.Fprintf(w, "%+v\n", urlDatabase)
 }
 
 func generateURL() string {

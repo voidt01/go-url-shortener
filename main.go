@@ -2,16 +2,17 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
+		
 )
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /shorten", Shorten)
+	mux.HandleFunc("POST /shorten", Shortening)
+	mux.HandleFunc("GET /{shortCode}", Redirecting)
 
 	log.Print("starting a server on:4000")
 	err := http.ListenAndServe(":4000", mux)
@@ -20,27 +21,13 @@ func main() {
 
 const addr = "http://localhost:4000/"
 
-type urlStore struct {
-	urls map[string]string
-}
+var urlDatabase = NewStoreURL()
 
-type postUrlRequest struct {
-	OriginalURL string `json:"original_url"`
-}
-
-type postUrlResponse struct {
-	OriginalURL string `json:"original_url"`
-	ShortenURL  string `json:"shorten_url"`
-}
-
-func Shorten(w http.ResponseWriter, r *http.Request) {
+func Shortening(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	urlDatabase := &urlStore{
-		urls: make(map[string]string),
-	}
-	urlRequest := &postUrlRequest{}
-	urlResponse := &postUrlResponse{}
+	urlRequest := &shortenRequest{}
+	urlResponse := &shortenResponse	{}
 
 	// Decode POST Request body (JSON) to Go
 	err_decode := json.NewDecoder(r.Body).Decode(urlRequest)
@@ -54,7 +41,7 @@ func Shorten(w http.ResponseWriter, r *http.Request) {
 	// Generate Short URL & Store urls in Database
 	key := generateURL()
 	value := urlRequest.OriginalURL
-	urlDatabase.urls[key] = value
+	urlDatabase.Set(key, value)
 
 	// creating post response struct
 	urlResponse.OriginalURL = value
@@ -68,7 +55,18 @@ func Shorten(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error encoding response: %v", err_encode)
 	}
 
-	fmt.Fprintf(w, "%+v\n", urlDatabase)
+}
+
+func Redirecting(w http.ResponseWriter, r *http.Request) {
+	key := r.URL.Path[1:]
+
+	value, ok := urlDatabase.Get(key)
+	if !ok {
+		log.Printf("There is no value for key: %s", key)
+		http.NotFound(w, r)
+	}
+
+	http.Redirect(w, r, value, http.StatusFound)
 }
 
 func generateURL() string {

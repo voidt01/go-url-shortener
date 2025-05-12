@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -18,8 +17,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	err_decode := json.NewDecoder(r.Body).Decode(urlRequest)
 
 	if err_decode != nil {
-		log.Printf("Error decoding request: %v", err_decode)
-		http.Error(w, err_decode.Error(), http.StatusBadRequest)
+		a.clientError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -38,7 +36,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	err_encode := json.NewEncoder(w).Encode(urlResponse)
 
 	if err_encode != nil {
-		log.Printf("Error encoding response: %v", err_encode)
+		a.errorLog.Printf("Error encoding response: %v", err_encode)
 	}
 
 }
@@ -48,8 +46,7 @@ func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
 
 	value, ok := a.urls.Get(key)
 	if !ok {
-		log.Printf("There is no value for key: %s", key)
-		http.NotFound(w, r)
+		a.notFound(w)
 		return
 	}
 

@@ -2,7 +2,7 @@ package main
 
 import "net/http"
 
-func (a *App) routes() *http.ServeMux {
+func (a *App) Routes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /shorten", a.Shortening)
@@ -10,3 +10,4 @@ func (a *App) routes() *http.ServeMux {
 
 	return mux
 }
+	

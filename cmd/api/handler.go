@@ -63,20 +63,4 @@ type shortenResponse struct {
 	ShortenURL  string `json:"shorten_url"`
 }
 
-// Url Shortener Logic
-func generateURL() string {
-	url := generator(6)
-	return url
-}
 
-func generator(digitString int) string {
-	var randomizer = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-	var alphaNumeric = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-	tempURL := make([]rune, digitString)
-	for i := range tempURL {
-		tempURL[i] = alphaNumeric[randomizer.Intn(len(alphaNumeric))]
-	}
-
-	return string(tempURL)
-}

@@ -2,9 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"math/rand"
 	"net/http"
-	"time"
 )
 
 func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
@@ -22,13 +20,14 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate Short URL & Store urls in Database
-	key := generateURL()
-	value := urlRequest.OriginalURL
-	a.urls.Set(key, value)
+	shortCode, err_model := a.urls.Insert(urlRequest.OriginalURL)
+	if err_model != nil {
+		a.serveError(w, err_model)
+	}
 
 	// creating post response struct
-	urlResponse.OriginalURL = value
-	urlResponse.ShortenURL = a.configApp.baseURL + a.configApp.port + "/" + key
+	urlResponse.OriginalURL = urlRequest.OriginalURL
+	urlResponse.ShortenURL = a.configApp.Server.baseURL + a.configApp.Server.port + "/" + shortCode
 
 	// encoding response struct (G0) to JSON
 	w.Header().Set("Content-Type", "application/json")
@@ -42,10 +41,10 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
-	key := r.URL.Path[1:]
+	short_code := r.URL.Path[1:]
 
-	value, ok := a.urls.Get(key)
-	if !ok {
+	value, err := a.urls.Get(short_code)
+	if err != nil {
 		a.notFound(w)
 		return
 	}
@@ -62,5 +61,3 @@ type shortenResponse struct {
 	OriginalURL string `json:"original_url"`
 	ShortenURL  string `json:"shorten_url"`
 }
-
-

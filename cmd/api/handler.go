@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/voidt01/go-url-shortener/internal/models"
 )
 
 func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +48,11 @@ func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
 
 	value, err := a.urls.Get(short_code)
 	if err != nil {
-		a.notFound(w)
+		if errors.Is(err, models.ErrNoRecord) {
+			a.notFound(w)
+		} else {
+			a.serveError(w, err)
+		}
 		return
 	}
 

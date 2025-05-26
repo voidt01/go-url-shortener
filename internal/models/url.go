@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"math/rand"
 	"time"
 )
@@ -32,14 +33,14 @@ func (u *UrlModel) Insert(original_url string) (short_code string, err error) {
 }
 
 func (u *UrlModel) Get(short_code string) (original_url string, err error) {
-	stmt := `SELECT original_url FROM urls
-	WHERE short_code = ?`
 
-	rows := u.DB.QueryRow(stmt, short_code)
-
-	err = rows.Scan(&original_url)
+	err = u.DB.QueryRow("SELECT original_url FROM urls WHERE short_code = ?", short_code).Scan(&original_url)
 	if err != nil {
-		return "", err
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNoRecord
+		} else {
+			return "", err
+		}
 	}
 
 	return original_url, nil

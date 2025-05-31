@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	// "fmt"
+	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/voidt01/go-url-shortener/internal/models"
 )
 
-// Request and Response for creating shortenURL
 type shortenRequest struct {
 	OriginalURL string `json:"original_url"`
 }
@@ -21,31 +21,10 @@ type shortenResponse struct {
 }
 
 func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
-	urlRequest := &shortenRequest{}
-	// urlResponse := &shortenResponse{}
-
-	// Decode POST Request body (JSON) to Go
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields() 
-
-	err_decode := dec.Decode(urlRequest)
-	if err_decode != nil {
-		a.clientError(w, http.StatusBadRequest)
+	urlRequest := shortenRequestHelper(a, w, r.Body)
+	if urlRequest == nil {
 		return
 	}
-
-	// url nil value check
-	if urlRequest.OriginalURL == "" {
-		a.clientError(w, http.StatusBadRequest)
-		return
-	}
-	// url validation
-	if !isValid(urlRequest.OriginalURL) {
-		a.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	fmt.Fprintf(w, "%+v\n", urlRequest)
 
 	// Generate Short URL & Store urls in Database
 	// shortCode, err_model := a.urls.Insert(urlRequest.OriginalURL)
@@ -84,7 +63,39 @@ func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, value, http.StatusFound)
 }
 
+
+// HELPER FUNCTIONS 
+func shortenRequestHelper(a *App, w http.ResponseWriter, rb io.Reader) *shortenRequest {
+	urlRequest := &shortenRequest{}
+
+	// limit request body to 1 MB
+	limitedRead := io.LimitReader(rb, 1024*1024)
+
+	// Read and Decode POST Request body (JSON) to Go
+	dec := json.NewDecoder(limitedRead)
+	dec.DisallowUnknownFields()
+
+	err_decode := dec.Decode(urlRequest)
+	if err_decode != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return nil
+	}
+
+	// url nil value check
+	if urlRequest.OriginalURL == "" {
+		a.clientError(w, http.StatusBadRequest)
+		return nil
+	}
+	// url validation
+	if !isValid(urlRequest.OriginalURL) {
+		a.clientError(w, http.StatusBadRequest)
+		return nil
+	}
+
+	return urlRequest
+}
+
 func isValid(ori_url string) bool {
 	u, err := url.Parse(ori_url)
-	return err == nil && (u.Scheme == "https" || u.Scheme == "http")
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != ""
 }

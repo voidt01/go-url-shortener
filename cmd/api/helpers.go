@@ -20,3 +20,11 @@ func (a *App) clientError(w http.ResponseWriter, status int) {
 func (a *App) notFound(w http.ResponseWriter) {
 	a.clientError(w, http.StatusNotFound)
 }
+
+func (a *App) EntityTooLarge(w http.ResponseWriter) {
+	a.clientError(w, http.StatusRequestEntityTooLarge)
+}
+
+func (a *App) unprocessableEntity(w http.ResponseWriter) {
+	a.clientError(w, http.StatusUnprocessableEntity)
+}

@@ -65,11 +65,13 @@ func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
 
 
 // HELPER FUNCTIONS 
-func shortenRequestHelper(a *App, w http.ResponseWriter, rb io.Reader) *shortenRequest {
+func shortenRequestHelper(a *App, w http.ResponseWriter, rb io.ReadCloser) *shortenRequest {
 	urlRequest := &shortenRequest{}
+	var reqSizeErr *http.MaxBytesError
 
-	// limit request body to 1 MB
-	limitedRead := io.LimitReader(rb, 1024*1024)
+	// limit request body to 1 MB	
+	const maxRequestSize = 1024 * 1024
+	limitedRead := http.MaxBytesReader(w, rb, maxRequestSize)
 
 	// Read and Decode POST Request body (JSON) to Go
 	dec := json.NewDecoder(limitedRead)
@@ -77,6 +79,10 @@ func shortenRequestHelper(a *App, w http.ResponseWriter, rb io.Reader) *shortenR
 
 	err_decode := dec.Decode(urlRequest)
 	if err_decode != nil {
+		if errors.As(err_decode, &reqSizeErr) {
+			a.EntityTooLarge(w)
+		}
+
 		a.clientError(w, http.StatusBadRequest)
 		return nil
 	}
@@ -88,7 +94,7 @@ func shortenRequestHelper(a *App, w http.ResponseWriter, rb io.Reader) *shortenR
 	}
 	// url validation
 	if !isValid(urlRequest.OriginalURL) {
-		a.clientError(w, http.StatusBadRequest)
+		a.unprocessableEntity(w)
 		return nil
 	}
 

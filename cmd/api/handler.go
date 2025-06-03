@@ -19,12 +19,12 @@ type shortenRequest struct {
 
 func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	var req shortenRequest
-	var reqErr *requestError
+	var clientErr *clientError
 
 	err := a.decodeJSON(w, r, &req)
 	if err != nil {
-		if errors.As(err, &reqErr){
-			http.Error(w, reqErr.msg, reqErr.status)
+		if errors.As(err, &clientErr){
+			http.Error(w, clientErr.msg, clientErr.status)
 		} else {
 			a.errorLog.Print(err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -34,8 +34,8 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 
 	err = a.isValid(req.OriginalURL)
 	if err != nil {
-		if errors.As(err, &reqErr){
-			http.Error(w, reqErr.msg, reqErr.status)
+		if errors.As(err, &clientErr){
+			http.Error(w, clientErr.msg, clientErr.status)
 		} else {
 			a.errorLog.Print(err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -79,7 +79,3 @@ func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, value, http.StatusFound)
 }
-
-
-// HELPER FUNCTIONS 
-

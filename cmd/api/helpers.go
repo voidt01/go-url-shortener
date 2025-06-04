@@ -7,20 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"runtime/debug"
 	"strings"
 )
-
-func (a *App) serveError(w http.ResponseWriter, err error) {
-	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	a.errorLog.Output(2, trace)
-
-	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-}
-
-func (a *App) clientError(w http.ResponseWriter, status int) {
-	http.Error(w, http.StatusText(status), status)
-}
 
 type clientError struct {
 	status int 
@@ -29,6 +17,18 @@ type clientError struct {
 
 func (ce *clientError) Error() string {
 	return ce.msg
+}
+
+
+func (a *App) ErrorResponse(w http.ResponseWriter, msg string, status int) {
+	ErrResp := map[string]string{"error" : msg}
+
+	err := a.encodeJSON(w, ErrResp, status)
+	if err != nil {
+		a.errorLog.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
 }
 
 func (a *App) decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
@@ -95,11 +95,29 @@ func (a *App) decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error 
 	return nil
 }
 
+func (a *App) encodeJSON(w http.ResponseWriter, data any, status int) error {
+	js, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write(js)
+
+	return nil
+}
+
 func (a *App) isValid(ori_url string) error {
 	u, err := url.Parse(ori_url)
 	if !(err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "") {
 		msg := "URL must be valid"
-		return &clientError	{status: http.StatusBadRequest, msg: msg}
+		return &clientError{status: http.StatusBadRequest, msg: msg}
 	}
 	return nil
+}
+
+func (a *App) builderShortenURL(shortCode string) string {
+	url := fmt.Sprintf("%s%s/%s", a.configApp.Server.baseURL, a.configApp.Server.port, shortCode)
+	return url
 }

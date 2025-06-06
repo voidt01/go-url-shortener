@@ -21,7 +21,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	var clientErr *clientError
 
 	// decoding JSON to Go obj
-	err := a.decodeJSON(w, r, &req)
+	err := decodeJSON(w, r, &req)
 	if err != nil {
 		if errors.As(err, &clientErr) {
 			a.ErrorResponse(w, clientErr.msg, clientErr.status)
@@ -33,7 +33,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// validation for the original url
-	url, err := a.urlValidation(req.OriginalURL)
+	url, err := urlValidation(req.OriginalURL)
 	if err != nil {
 		if errors.As(err, &clientErr) {
 			a.ErrorResponse(w, clientErr.msg, clientErr.status)
@@ -59,7 +59,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// encoding response struct (G0) to JSON
-	err_encode := a.encodeJSON(w, &resp, http.StatusCreated)
+	err_encode := encodeJSON(w, &resp, http.StatusCreated)
 	if err_encode != nil {
 		a.errorLog.Print(err_encode.Error())
 		a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)

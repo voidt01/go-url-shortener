@@ -22,7 +22,7 @@ func (ce *clientError) Error() string {
 func (a *App) ErrorResponse(w http.ResponseWriter, msg string, status int) {
 	ErrResp := map[string]string{"error": msg}
 
-	err := a.encodeJSON(w, ErrResp, status)
+	err := encodeJSON(w, ErrResp, status)
 	if err != nil {
 		a.errorLog.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -30,7 +30,7 @@ func (a *App) ErrorResponse(w http.ResponseWriter, msg string, status int) {
 
 }
 
-func (a *App) decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
+func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	// checking if the Content-Type: application/json
 	ct := r.Header.Get("Content-Type")
 	if ct != "" {
@@ -94,7 +94,7 @@ func (a *App) decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error 
 	return nil
 }
 
-func (a *App) encodeJSON(w http.ResponseWriter, data any, status int) error {
+func encodeJSON(w http.ResponseWriter, data any, status int) error {
 	js, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (a *App) encodeJSON(w http.ResponseWriter, data any, status int) error {
 	return nil
 }
 
-func (a *App) urlValidation(ori_url string) (string, error) {
+func urlValidation(ori_url string) (string, error) {
 	u, err := url.Parse(ori_url)
 	if err != nil {
 		msg := "URL must be valid"

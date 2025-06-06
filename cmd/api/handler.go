@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	// "fmt"
 	"net/http"
 
 	"github.com/voidt01/go-url-shortener/internal/models"
@@ -28,13 +27,13 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 			a.ErrorResponse(w, clientErr.msg, clientErr.status)
 		} else {
 			a.errorLog.Print(err.Error())
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
 		}
 		return
 	}
 
 	// validation for the original url
-	err = a.isValid(req.OriginalURL)
+	url, err := a.urlValidation(req.OriginalURL)
 	if err != nil {
 		if errors.As(err, &clientErr) {
 			a.ErrorResponse(w, clientErr.msg, clientErr.status)
@@ -46,7 +45,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate Short URL & Store urls in Database
-	shortCode, err_model := a.urls.Insert(req.OriginalURL)
+	shortCode, err_model := a.urls.Insert(url)
 	if err_model != nil {
 		a.errorLog.Print(err_model.Error())
 		a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
@@ -55,7 +54,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 
 	// creating post response struct
 	resp := &shortenResponse{
-		OriginalURL: req.OriginalURL,
+		OriginalURL: url,
 		ShortenURL:  a.builderShortenURL(shortCode),
 	}
 
@@ -74,10 +73,10 @@ func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
 	value, err := a.urls.Get(short_code)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
-			a.ErrorResponse(w, "URL not found", http.StatusNotFound)
+			http.Error(w, "URL not found", http.StatusNotFound)
 		} else {
 			a.errorLog.Print(err.Error())
-			a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+			http.Error(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
 		}
 		return
 	}

@@ -24,10 +24,10 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	err := decodeJSON(w, r, &req)
 	if err != nil {
 		if errors.As(err, &clientErr) {
-			a.ErrorResponse(w, clientErr.msg, clientErr.status)
+			a.ErrorResponseJSON(w, clientErr.msg, clientErr.status)
 		} else {
 			a.errorLog.Print(err.Error())
-			a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+			a.ErrorResponseJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -36,10 +36,10 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	url, err := urlValidation(req.OriginalURL)
 	if err != nil {
 		if errors.As(err, &clientErr) {
-			a.ErrorResponse(w, clientErr.msg, clientErr.status)
+			a.ErrorResponseJSON(w, clientErr.msg, clientErr.status)
 		} else {
 			a.errorLog.Print(err.Error())
-			a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+			a.ErrorResponseJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -48,7 +48,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	shortCode, err_model := a.urls.Insert(url)
 	if err_model != nil {
 		a.errorLog.Print(err_model.Error())
-		a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+		a.ErrorResponseJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
 		return
 	}
 
@@ -62,7 +62,7 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 	err_encode := encodeJSON(w, &resp, http.StatusCreated)
 	if err_encode != nil {
 		a.errorLog.Print(err_encode.Error())
-		a.ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+		a.ErrorResponseJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
 	}
 
 }
@@ -73,10 +73,10 @@ func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
 	value, err := a.urls.Get(short_code)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
-			http.Error(w, "URL not found", http.StatusNotFound)
+			ErrorResponse(w, "URL not found", http.StatusNotFound)
 		} else {
 			a.errorLog.Print(err.Error())
-			http.Error(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+			ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
 		}
 		return
 	}

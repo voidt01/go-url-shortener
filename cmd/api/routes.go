@@ -2,12 +2,14 @@ package main
 
 import "net/http"
 
-func (a *App) Routes() *http.ServeMux {
+func (a *App) Routes() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /shorten", a.Shortening)
-	mux.HandleFunc("GET /{shortCode}", a.Redirecting)
+	shortenHandler := http.HandlerFunc(a.Shortening)
+	redirectHandler := http.HandlerFunc(a.Redirecting)
 
-	return mux
+	mux.Handle("POST /shorten", a.enforceJSONhandler(shortenHandler))
+	mux.Handle("GET /{shortCode}", redirectHandler)
+
+	return a.logRequest(secureHeaders(mux))
 }
-	

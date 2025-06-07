@@ -19,7 +19,7 @@ func (ce *clientError) Error() string {
 	return ce.msg
 }
 
-func (a *App) ErrorResponse(w http.ResponseWriter, msg string, status int) {
+func (a *App) ErrorResponseJSON(w http.ResponseWriter, msg string, status int) {
 	ErrResp := map[string]string{"error": msg}
 
 	err := encodeJSON(w, ErrResp, status)
@@ -30,16 +30,11 @@ func (a *App) ErrorResponse(w http.ResponseWriter, msg string, status int) {
 
 }
 
-func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	// checking if the Content-Type: application/json
-	ct := r.Header.Get("Content-Type")
-	if ct != "" {
-		if !strings.HasPrefix(ct, "application/json") {
-			msg := "Content-Type must be application/json"
-			return &clientError{status: http.StatusUnsupportedMediaType, msg: msg}
-		}
-	}
+func ErrorResponse(w http.ResponseWriter, msg string, status int) {
+	http.Error(w, msg, status)
+}
 
+func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	// limit request body to 1 MB
 	const maxRequestSize = 1024 * 1024
 	limitedRead := http.MaxBytesReader(w, r.Body, maxRequestSize)

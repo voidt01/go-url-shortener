@@ -20,14 +20,23 @@ func (ce *clientError) Error() string {
 }
 
 func (a *App) ErrorResponseJSON(w http.ResponseWriter, msg string, status int) {
-	ErrResp := map[string]string{"error": msg}
+	ErrResp := map[string]string{
+		"status": "error",
+		"error":  msg,
+	}
 
-	err := encodeJSON(w, ErrResp, status)
+	js, err := json.Marshal(ErrResp)
 	if err != nil {
 		a.errorLog.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
+	js = append(js, '\n')
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write(js)
 }
 
 func ErrorResponse(w http.ResponseWriter, msg string, status int) {
@@ -90,7 +99,11 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 }
 
 func encodeJSON(w http.ResponseWriter, data any, status int) error {
-	js, err := json.Marshal(data)
+	js, err := json.Marshal(map[string]any{
+		"status": "success",
+		"data":   data,
+	})
+
 	if err != nil {
 		return err
 	}
@@ -135,4 +148,3 @@ func (a *App) builderShortenURL(shortCode string) string {
 	url := fmt.Sprintf("%s%s/%s", a.configApp.Server.baseURL, a.configApp.Server.port, shortCode)
 	return url
 }
-

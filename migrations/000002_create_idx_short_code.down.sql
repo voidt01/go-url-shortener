@@ -1,0 +1,1 @@
+DROP INDEX idx_short_code ON urls;

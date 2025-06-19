@@ -13,8 +13,8 @@ import (
 
 type Config struct {
 	Server struct {
-		port     string
-		baseURL  string
+		port    string
+		baseURL string
 	}
 	Database struct {
 		dsn      string
@@ -63,7 +63,7 @@ func main() {
 		Handler:  app.Routes(),
 	}
 
-	infoLog.Printf("starting a server on: %s", cfg.Server.port)
+	infoLog.Printf("starting a server on %s", cfg.Server.port)
 	err = srv.ListenAndServe()
 	errorLog.Fatal(err)
 }

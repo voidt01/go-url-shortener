@@ -145,6 +145,6 @@ func urlValidation(ori_url string) (string, error) {
 }
 
 func (a *App) builderShortenURL(shortCode string) string {
-	url := fmt.Sprintf("%s%s/%s", a.configApp.Server.baseURL, a.configApp.Server.port, shortCode)
+	url := fmt.Sprintf("%s%s/%s", a.config.Server.baseURL, a.config.Server.port, shortCode)
 	return url
 }

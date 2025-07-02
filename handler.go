@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/voidt01/go-url-shortener/internal/models"
 )
 
 type shortenRequest struct {

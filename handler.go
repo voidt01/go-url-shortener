@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"net/http"
-
 )
 
 type shortenRequest struct {
@@ -15,46 +14,38 @@ type shortenResponse struct {
 	ShortenURL  string `json:"shorten_url"`
 }
 
-func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
+type urlHandler struct {
+	service *urlService
+}
+
+func (uh *urlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	var req shortenRequest
-	var clientErr *clientError
 
 	// decoding JSON to Go obj
 	err := decodeJSON(w, r, &req)
 	if err != nil {
-		if errors.As(err, &clientErr) {
-			a.ErrorResponseJSON(w, clientErr.msg, clientErr.status)
-		} else {
-			a.errorLog.Print(err.Error())
-			a.ErrorResponseJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
-		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// validation for the original url
 	url, err := urlValidation(req.OriginalURL)
 	if err != nil {
-		if errors.As(err, &clientErr) {
-			a.ErrorResponseJSON(w, clientErr.msg, clientErr.status)
-		} else {
-			a.errorLog.Print(err.Error())
-			a.ErrorResponseJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
-		}
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	// Generate Short URL & Store urls in Database
-	shortCode, err_model := a.urls.Insert(url)
+	shortCode, err_model := app.urls.Insert(url)
 	if err_model != nil {
-		a.errorLog.Print(err_model.Error())
-		a.ErrorResponseJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+		http.Error(w, err_model.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// creating post response struct
 	resp := &shortenResponse{
 		OriginalURL: url,
-		ShortenURL:  a.builderShortenURL(shortCode),
+		ShortenURL:  app.builderShortenURL(shortCode),
 	}
 
 	// encoding response struct (G0) to JSON
@@ -66,19 +57,20 @@ func (a *App) Shortening(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (a *App) Redirecting(w http.ResponseWriter, r *http.Request) {
+func (uh *urlHandler) Redirecting(w http.ResponseWriter, r *http.Request) {
 	short_code := r.URL.Path[1:]
 
-	value, err := a.urls.Get(short_code)
+	original_url, err := uh.service.ResolveUrl(short_code)
 	if err != nil {
-		if errors.Is(err, models.ErrNoRecord) {
-			ErrorResponse(w, "URL not found", http.StatusNotFound)
-		} else {
-			a.errorLog.Print(err.Error())
-			ErrorResponse(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, ErrUrlNotFound):
+			http.Error(w, "This link doesn't exist", http.StatusNotFound) 
+			return
+		default:
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
-	http.Redirect(w, r, value, http.StatusFound)
+	http.Redirect(w, r, original_url, http.StatusFound)
 }

@@ -8,40 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-)
-
-type clientError struct {
-	status int
-	msg    string
-}
-
-func (ce *clientError) Error() string {
-	return ce.msg
-}
-
-func (a *App) ErrorResponseJSON(w http.ResponseWriter, msg string, status int) {
-	ErrResp := map[string]string{
-		"status": "error",
-		"error":  msg,
-	}
-
-	js, err := json.Marshal(ErrResp)
-	if err != nil {
-		a.errorLog.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	js = append(js, '\n')
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	w.Write(js)
-}
-
-func ErrorResponse(w http.ResponseWriter, msg string, status int) {
-	http.Error(w, msg, status)
-}
+)}
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	// limit request body to 1 MB

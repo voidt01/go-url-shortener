@@ -1,24 +1,24 @@
 package main
 
 import (
-	"errors"
 	"math/rand"
 	"time"
 )
 
-type Url struct {
-	ID          int
-	ShortCode   string
-	OriginalUrl string
-	CreatedAt   time.Time
+type urlService struct{
+	store *urlStore
 }
 
-var (
-	ErrUrlNotFound = errors.New("models: No matching url found")
-	ErrUrlInvalid  = errors.New("models: Url format is invalid")
-)
+func (us *urlService) ShortenUrl() {}
 
-// Url Shortener Logic
+func (us *urlService) ResolveUrl(short_code string) (string, error) {
+	original_url, err := us.store.GetUrl(short_code)
+	if err != nil {
+		return "", err
+	}
+	return original_url, nil
+}
+
 func generateURL() string {
 	url := generator(6)
 	return url

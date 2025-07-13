@@ -71,7 +71,7 @@ func (uh *urlHandler) Redirecting(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "This link doesn't exist", http.StatusNotFound)
 			return
 		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
 	}

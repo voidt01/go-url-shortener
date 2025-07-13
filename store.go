@@ -3,10 +3,22 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"time"
 )
+
+type URL struct {
+	Id          int
+	ShortCode   string
+	OriginalUrl string
+	CreatedAt   time.Time
+}
 
 type urlStore struct {
 	db *sql.DB
+}
+
+func NewUrlStore(db *sql.DB) *urlStore {
+	return &urlStore{db: db}
 }
 
 func (u *urlStore) SetUrl(original_url, short_code string) error {
@@ -22,18 +34,19 @@ func (u *urlStore) SetUrl(original_url, short_code string) error {
 	return nil
 }
 
-func (u *urlStore) GetUrl(short_code string) (original_url string, err error) {
+func (u *urlStore) GetUrl(short_code string) (*URL, error) {
+	var url *URL = new(URL)
 
-	err = u.db.QueryRow("SELECT id, original_url, short_code, created_at FROM urls WHERE short_code = ?", short_code).Scan(&original_url)
+	err := u.db.QueryRow("SELECT id, original_url, short_code, created_at FROM urls WHERE short_code = ?", short_code).Scan(&url.Id, &url.OriginalUrl, &url.ShortCode, &url.CreatedAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return "", ErrUrlNotFound
+			return nil, ErrUrlNotFound
 		default:
-			return "", err
+			return nil, err
 		}
 	}
 
-	return original_url, nil
+	return url, nil
 
 }

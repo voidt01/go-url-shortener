@@ -13,6 +13,7 @@ type Application struct {
 	config   *Config
 	errorLog *log.Logger
 	infoLog  *log.Logger
+	URLHandler *urlHandler
 }
 
 func main() {
@@ -34,10 +35,14 @@ func main() {
 	infoLog.Println("Connected to database successfully")
 	defer db.Close()
 
+	URLStore := NewUrlStore(db)
+	URLService := NewUrlService(URLStore)
+
 	app := &Application{
 		config:   cfg,
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		URLHandler: NewUrlHandler(URLService),
 	}
 
 	srv := &http.Server{

@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	"log"
-	"net/http"
 	"os"
 
+	"github.com/voidt01/go-url-shortener/internal/url"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -13,21 +13,18 @@ type Application struct {
 	config   *Config
 	errorLog *log.Logger
 	infoLog  *log.Logger
-	URLHandler *urlHandler
+	URLHandler *url.UrlHandler
 }
 
 func main() {
-	// app's logger
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	// app's config
 	cfg, err := LoadConfig()
 	if err != nil {
 		errorLog.Fatal(err)
 	}
 
-	// Pool of DB Conn
 	db, err := OpenDB(cfg.database.dbDriver, cfg.database.dsn)
 	if err != nil {
 		errorLog.Fatal(err)
@@ -35,25 +32,20 @@ func main() {
 	infoLog.Println("Connected to database successfully")
 	defer db.Close()
 
-	URLStore := NewUrlStore(db)
-	URLService := NewUrlService(URLStore)
+	URLStore := url.NewUrlStore(db)
+	URLService := url.NewUrlService(URLStore)
 
 	app := &Application{
 		config:   cfg,
 		errorLog: errorLog,
 		infoLog:  infoLog,
-		URLHandler: NewUrlHandler(URLService),
+		URLHandler: url.NewUrlHandler(URLService),
 	}
 
-	srv := &http.Server{
-		Addr:     cfg.port,
-		ErrorLog: errorLog,
-		Handler:  app.Routes(),
+	err = app.serve()
+	if err != nil {
+		errorLog.Fatal(err)
 	}
-
-	infoLog.Printf("starting a server on %s", cfg.port)
-	err = srv.ListenAndServe()
-	errorLog.Fatal(err)
 }
 
 func OpenDB(driver, dsn string) (*sql.DB, error) {
@@ -68,3 +60,4 @@ func OpenDB(driver, dsn string) (*sql.DB, error) {
 
 	return db, nil
 }
+

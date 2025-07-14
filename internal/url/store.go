@@ -1,4 +1,4 @@
-package main
+package url
 
 import (
 	"database/sql"

@@ -1,4 +1,4 @@
-package main
+package url
 
 import (
 	"encoding/json"
@@ -18,15 +18,15 @@ type shortenResponse struct {
 	ShortenURL  string `json:"shorten_url"`
 }
 
-type urlHandler struct {
+type UrlHandler struct {
 	service *urlService
 }
 
-func NewUrlHandler(service *urlService) *urlHandler {
-	return &urlHandler{service: service}
+func NewUrlHandler(service *urlService) *UrlHandler {
+	return &UrlHandler{service: service}
 }
 
-func (uh *urlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
+func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	var req *shortenRequest = new(shortenRequest)
 
 	// decoding JSON to Go obj
@@ -61,7 +61,7 @@ func (uh *urlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (uh *urlHandler) Redirecting(w http.ResponseWriter, r *http.Request) {
+func (uh *UrlHandler) Redirecting(w http.ResponseWriter, r *http.Request) {
 	short_code := r.URL.Path[1:]
 
 	original_url, err := uh.service.ResolveUrl(short_code)

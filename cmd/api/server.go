@@ -1,12 +1,17 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 func (app *Application) serve() error {
 	srv := &http.Server{
 		Addr:     app.config.port,
 		ErrorLog: app.errorLog,
 		Handler:  app.Routes(),
+		ReadTimeout: 30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	}
 
 	app.infoLog.Printf("starting a server on %s", app.config.port)

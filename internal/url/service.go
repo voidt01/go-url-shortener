@@ -1,6 +1,7 @@
 package url
 
 import (
+	"errors"
 	"math/rand"
 	"net/url"
 	"time"
@@ -14,23 +15,31 @@ func NewUrlService(store *urlStore) *urlService{
 	return &urlService{store: store}
 }
 
-func (us *urlService) ShortenUrl(original_url string) (string, string, error) {
-	// url validation & sanitazion
-	original_url, err := us.normalizeUrl(original_url)
+
+func (us *urlService) ShortenUrl(originalUrl string) (sanitizedUrl, shortCode string, err error) {
+	sanitizedUrl, err = us.normalizeUrl(originalUrl)
 	if err != nil {
 		return "", "", err
 	}
 
-	// short code generation
-	short_code := us.generateUrl()
+	maxRetries := 5
+	for range maxRetries{
+		shortCode = us.generateUrl()
 
-	// insert url data to db
-	err = us.store.SetUrl(original_url, short_code)
-	if err != nil {
-		return "", "", err
+		err = us.store.SetUrl(sanitizedUrl, shortCode)
+		if err != nil {
+			switch {
+			case errors.Is(err, ErrUrlDuplicated):
+				continue
+			default:
+				return "", "", err
+			}
+		}
+
+		return sanitizedUrl, shortCode, nil
 	}
 
-	return original_url, short_code, nil
+	return "", "", ErrShortUrlFailedGeneration
 }
 
 func (us *urlService) ResolveUrl(short_code string) (string, error) {
@@ -65,7 +74,8 @@ func (us *urlService) normalizeUrl(ori_url string) (string, error) {
 }
 
 func (us *urlService) generateUrl() string {
-	url := generator(6)
+	lenShortCode := 7
+	url := generator(lenShortCode)
 	return url
 }
 

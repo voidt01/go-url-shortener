@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 type URL struct {
@@ -23,11 +25,13 @@ func NewUrlStore(db *sql.DB) *urlStore {
 
 func (u *urlStore) SetUrl(original_url, short_code string) error {
 
-	stmt := `INSERT INTO urls(short_code, original_url)
-	VALUES(?, ?)`
-
-	_, err := u.db.Exec(stmt, short_code, original_url)
+	_, err := u.db.Exec("INSERT INTO urls(short_code, original_url) VALUES(?, ?)", short_code, original_url)
 	if err != nil {
+		if errUnique, ok := err.(*mysql.MySQLError); ok {
+			if errUnique.Number == ErrDuplicateEntryCode {
+				return ErrUrlDuplicated
+			}
+		}
 		return err
 	}
 

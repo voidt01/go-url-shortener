@@ -2,9 +2,8 @@ package url
 
 import (
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"net/url"
-	"time"
 )
 
 type urlService struct{
@@ -80,12 +79,11 @@ func (us *urlService) generateUrl() string {
 }
 
 func generator(digitString int) string {
-	var randomizer = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-	var alphaNumeric = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	alphaNumeric := []byte("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-	tempURL := make([]rune, digitString)
+	tempURL := make([]byte, digitString)
 	for i := range tempURL {
-		tempURL[i] = alphaNumeric[randomizer.Intn(len(alphaNumeric))]
+		tempURL[i] = alphaNumeric[rand.IntN(len(alphaNumeric))]
 	}
 
 	return string(tempURL)

@@ -42,8 +42,10 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, ErrUrlInvalid):
 			writeJSON(w, "invalid url type", http.StatusUnprocessableEntity, "error")
-		default:
+		case errors.Is(err, ErrShortUrlFailedGeneration):
 			writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
+		default:
+			writeJSON(w, "Internal server error", http.StatusInternalServerError, "error")
 		}
 	}
 

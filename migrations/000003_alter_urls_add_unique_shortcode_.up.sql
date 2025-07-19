@@ -1,0 +1,1 @@
+ALTER TABLE urls ADD CONSTRAINT unique_short_code UNIQUE(short_code);

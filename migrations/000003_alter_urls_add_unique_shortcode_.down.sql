@@ -1,0 +1,1 @@
+ALTER TABLE urls DROP INDEX unique_short_code;

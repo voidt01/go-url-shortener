@@ -2,17 +2,30 @@ package main
 
 import (
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 func (app *Application) serve() error {
 	srv := &http.Server{
-		Addr:     app.config.port,
-		ErrorLog: app.errorLog,
-		Handler:  app.Routes(),
-		ReadTimeout: 30 * time.Second,
+		Addr:         app.config.port,
+		ErrorLog:     app.errorLog,
+		Handler:      app.Routes(),
+		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
+
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		for {
+			sig := <-sigChannel
+			app.infoLog.Printf("received OS signal: %s", sig.String())
+		}
+	}()
 
 	app.infoLog.Printf("starting a server on %s", app.config.port)
 	return srv.ListenAndServe()
@@ -44,4 +57,3 @@ func (app *Application) logRequest(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-

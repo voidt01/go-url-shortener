@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,18 +19,36 @@ func (app *Application) serve() error {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	sigChannel := make(chan os.Signal, 1)
-	signal.Notify(sigChannel, syscall.SIGINT, syscall.SIGTERM)
+	sigChan := make(chan os.Signal, 1)
+	shutdownErrChan := make(chan error)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		for {
-			sig := <-sigChannel
-			app.infoLog.Printf("received OS signal: %s", sig.String())
-		}
+		sig := <-sigChan
+
+		app.infoLog.Printf("Shutting down the server: %s", sig.String())
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		shutdownErrChan <- srv.Shutdown(ctx)
 	}()
 
 	app.infoLog.Printf("starting a server on %s", app.config.port)
-	return srv.ListenAndServe()
+
+	err := srv.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdownErrChan
+	if err != nil {
+		return err
+	}
+
+	app.infoLog.Printf("Stopped server on %s", app.config.port)
+
+	return nil
 }
 
 func (app *Application) Routes() http.Handler {

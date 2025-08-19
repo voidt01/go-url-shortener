@@ -28,6 +28,7 @@ func NewUrlHandler(service *urlService) *UrlHandler {
 
 func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	var req *shortenRequest = new(shortenRequest)
+	ctx := r.Context()
 
 	// decoding JSON to Go obj
 	msg, HTTPStatus, err := readJSON(w, r, req)
@@ -37,15 +38,18 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// url service
-	url, shortCode, err := uh.service.ShortenUrl(req.OriginalURL)
+	url, shortCode, err := uh.service.ShortenUrl(ctx, req.OriginalURL)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUrlInvalid):
 			writeJSON(w, "invalid url type", http.StatusUnprocessableEntity, "error")
+			return
 		case errors.Is(err, ErrShortUrlFailedGeneration):
 			writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
+			return
 		default:
 			writeJSON(w, "Internal server error", http.StatusInternalServerError, "error")
+			return
 		}
 	}
 
@@ -59,14 +63,16 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	err_encode := writeJSON(w, &resp, http.StatusCreated, "success")
 	if err_encode != nil {
 		writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
+		return
 	}
 
 }
 
 func (uh *UrlHandler) Redirecting(w http.ResponseWriter, r *http.Request) {
 	short_code := r.URL.Path[1:]
+	ctx := r.Context()
 
-	original_url, err := uh.service.ResolveUrl(short_code)
+	original_url, err := uh.service.ResolveUrl(ctx, short_code)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUrlNotFound):
@@ -130,8 +136,7 @@ func readJSON(w http.ResponseWriter, r *http.Request, dst any) (string, int, err
 		return msg, http.StatusBadRequest, err_decode
 	}
 
-	msg := "Internal server error"
-	return msg, http.StatusInternalServerError, err_decode
+	return "", http.StatusOK, nil
 }
 
 func writeJSON(w http.ResponseWriter, data any, statusCode int, status string) error {

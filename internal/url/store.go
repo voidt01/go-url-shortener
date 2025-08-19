@@ -1,6 +1,7 @@
 package url
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -23,9 +24,9 @@ func NewUrlStore(db *sql.DB) *urlStore {
 	return &urlStore{db: db}
 }
 
-func (u *urlStore) SetUrl(original_url, short_code string) error {
+func (u *urlStore) SetUrl(ctx context.Context, original_url, short_code string) error {
 
-	_, err := u.db.Exec("INSERT INTO urls(short_code, original_url) VALUES(?, ?)", short_code, original_url)
+	_, err := u.db.ExecContext(ctx, "INSERT INTO urls(short_code, original_url) VALUES(?, ?)", short_code, original_url)
 	if err != nil {
 		if errUnique, ok := err.(*mysql.MySQLError); ok {
 			if errUnique.Number == ErrDuplicateEntryCode {
@@ -38,10 +39,10 @@ func (u *urlStore) SetUrl(original_url, short_code string) error {
 	return nil
 }
 
-func (u *urlStore) GetUrl(short_code string) (*URL, error) {
+func (u *urlStore) GetUrl(ctx context.Context, short_code string) (*URL, error) {
 	var url *URL = new(URL)
 
-	err := u.db.QueryRow("SELECT id, original_url, short_code, created_at FROM urls WHERE short_code = ?", short_code).Scan(&url.Id, &url.OriginalUrl, &url.ShortCode, &url.CreatedAt)
+	err := u.db.QueryRowContext(ctx, "SELECT id, original_url, short_code, created_at FROM urls WHERE short_code = ?", short_code).Scan(&url.Id, &url.OriginalUrl, &url.ShortCode, &url.CreatedAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

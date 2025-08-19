@@ -1,6 +1,7 @@
 package url
 
 import (
+	"context"
 	"errors"
 	"math/rand/v2"
 	"net/url"
@@ -15,7 +16,7 @@ func NewUrlService(store *urlStore) *urlService{
 }
 
 
-func (us *urlService) ShortenUrl(originalUrl string) (sanitizedUrl, shortCode string, err error) {
+func (us *urlService) ShortenUrl(ctx context.Context, originalUrl string) (sanitizedUrl, shortCode string, err error) {
 	sanitizedUrl, err = us.normalizeUrl(originalUrl)
 	if err != nil {
 		return "", "", err
@@ -25,7 +26,7 @@ func (us *urlService) ShortenUrl(originalUrl string) (sanitizedUrl, shortCode st
 	for range maxRetries{
 		shortCode = us.generateUrl()
 
-		err = us.store.SetUrl(sanitizedUrl, shortCode)
+		err = us.store.SetUrl(ctx, sanitizedUrl, shortCode)
 		if err != nil {
 			switch {
 			case errors.Is(err, ErrUrlDuplicated):
@@ -41,8 +42,8 @@ func (us *urlService) ShortenUrl(originalUrl string) (sanitizedUrl, shortCode st
 	return "", "", ErrShortUrlFailedGeneration
 }
 
-func (us *urlService) ResolveUrl(short_code string) (string, error) {
-	url, err := us.store.GetUrl(short_code)
+func (us *urlService) ResolveUrl(ctx context.Context, short_code string) (string, error) {
+	url, err := us.store.GetUrl(ctx, short_code)
 	if err != nil {
 		return "", err
 	}

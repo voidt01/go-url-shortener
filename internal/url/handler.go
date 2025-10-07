@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -48,6 +49,7 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
 			return
 		default:
+			log.Printf("There is an error: %s", err)
 			writeJSON(w, "Internal server error", http.StatusInternalServerError, "error")
 			return
 		}
@@ -62,6 +64,7 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	// encoding response struct (G0) to JSON
 	err_encode := writeJSON(w, &resp, http.StatusCreated, "success")
 	if err_encode != nil {
+		log.Printf("There is an error: %s", err)
 		writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
 		return
 	}
@@ -79,6 +82,7 @@ func (uh *UrlHandler) Redirecting(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "This link doesn't exist", http.StatusNotFound)
 			return
 		default:
+			log.Printf("There is an error: %s", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}

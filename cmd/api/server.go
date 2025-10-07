@@ -12,7 +12,7 @@ import (
 
 func (app *Application) serve() error {
 	srv := &http.Server{
-		Addr:         app.config.port,
+		Addr:         app.config.server.port,
 		ErrorLog:     app.errorLog,
 		Handler:      app.Routes(),
 		ReadTimeout:  30 * time.Second,
@@ -34,7 +34,7 @@ func (app *Application) serve() error {
 		shutdownErrChan <- srv.Shutdown(ctx)
 	}()
 
-	app.infoLog.Printf("starting a server on %s", app.config.port)
+	app.infoLog.Printf("starting a server on %s", app.config.server.port)
 
 	err := srv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -46,7 +46,7 @@ func (app *Application) serve() error {
 		return err
 	}
 
-	app.infoLog.Printf("Stopped server on %s", app.config.port)
+	app.infoLog.Printf("Stopped server on %s", app.config.server.port)
 
 	return nil
 }

@@ -39,7 +39,7 @@ func main() {
 		config:   cfg,
 		errorLog: errorLog,
 		infoLog:  infoLog,
-		URLHandler: url.NewUrlHandler(URLService),
+		URLHandler: url.NewUrlHandler(URLService, errorLog),
 	}
 
 	err = app.serve()

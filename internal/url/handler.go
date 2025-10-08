@@ -21,10 +21,11 @@ type shortenResponse struct {
 
 type UrlHandler struct {
 	service *urlService
+	errorLog *log.Logger
 }
 
-func NewUrlHandler(service *urlService) *UrlHandler {
-	return &UrlHandler{service: service}
+func NewUrlHandler(service *urlService, logger *log.Logger) *UrlHandler {
+	return &UrlHandler{service: service, errorLog: logger}
 }
 
 func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
@@ -46,10 +47,11 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, "invalid url type", http.StatusUnprocessableEntity, "error")
 			return
 		case errors.Is(err, ErrShortUrlFailedGeneration):
+			uh.errorLog.Print(err)
 			writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
 			return
 		default:
-			log.Printf("There is an error: %s", err)
+			uh.errorLog.Print(err)
 			writeJSON(w, "Internal server error", http.StatusInternalServerError, "error")
 			return
 		}
@@ -64,7 +66,7 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	// encoding response struct (G0) to JSON
 	err_encode := writeJSON(w, &resp, http.StatusCreated, "success")
 	if err_encode != nil {
-		log.Printf("There is an error: %s", err)
+		uh.errorLog.Print(err)
 		writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
 		return
 	}
@@ -82,7 +84,7 @@ func (uh *UrlHandler) Redirecting(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "This link doesn't exist", http.StatusNotFound)
 			return
 		default:
-			log.Printf("There is an error: %s", err)
+			uh.errorLog.Print(err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}

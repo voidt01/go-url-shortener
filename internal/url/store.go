@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -33,7 +34,7 @@ func (u *urlStore) SetUrl(ctx context.Context, original_url, short_code string) 
 				return ErrUrlDuplicated
 			}
 		}
-		return err
+		return fmt.Errorf("failed to insert url: %w", err)
 	}
 
 	return nil

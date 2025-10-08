@@ -66,7 +66,7 @@ func (uh *UrlHandler) Shortening(w http.ResponseWriter, r *http.Request) {
 	// encoding response struct (G0) to JSON
 	err_encode := writeJSON(w, &resp, http.StatusCreated, "success")
 	if err_encode != nil {
-		uh.errorLog.Print(err)
+		uh.errorLog.Print(err_encode)
 		writeJSON(w, "The server encountered a problem and couldn't process your request", http.StatusInternalServerError, "error")
 		return
 	}
